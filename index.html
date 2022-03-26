@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stundenplan GIBM</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Stundenplan GIBM</h1>
+        <form method="GET">
+            <div>
+                <!-- Formatierung für Tabellen-->
+                <label for="beruf" class="form-label">Berufsgruppe</label></br>
+                <select name="beruf" id="beruf" class="form-select">
+                </select>
+                </br> </br>
+                <label for="klasse" class="form-label">Klassenauswahl</label></br>
+                <select name="klasse" id="klasse" class="form-select">
+                </select>
+            </div>
+        </form>
+        <div>&nbsp;</div>
+        <!-- Ausgabe für den Inhalt - responsive Tabelle -->
+        <div id="message" class="table-responsive"></div>
+        <div id='calendar'></div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>
