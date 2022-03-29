@@ -1,12 +1,17 @@
+Date.prototype.getWeekNumber = function () {
+    var d = new Date(Date.UTC(this.getFullYear(), this.getMonth(), this.getDate()));
+    var dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7)
+};
 wochentag = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+let date = new Date();
+const dateTodayWKw = new Date().getWeekNumber() + "-" + date.getFullYear();
+let weekToday = new Date().getWeekNumber();
+let yearToday = date.getFullYear();
 //DOM ready - Shorthand
 $(document).ready(function () {
-    var date = new Date();
-
-    var currentThursday = new Date(date.getTime() + (3 - ((date.getDay() + 6) % 7)) * 86400000);
-    var yearOfThursday = currentThursday.getFullYear();
-    var firstThursday = new Date(new Date(yearOfThursday, 0, 4).getTime() + (3 - ((new Date(yearOfThursday, 0, 4).getDay() + 6) % 7)) * 86400000);
-    var weekNumber = Math.floor(1 + 0.5 + (currentThursday.getTime() - firstThursday.getTime()) / 86400000 / 7);
     // Ajax Request
     $.getJSON("http://sandbox.gibm.ch/berufe.php").done(function (data) {
         // loop über JSON-Array
@@ -16,7 +21,7 @@ $(document).ready(function () {
         })
     }).fail(function () {
         // Fehlermeldung ausgeben - Bootstrap alert Box
-        $('#message').html('<div class="alert alert-danger">Fehler ... </div>');
+        $('#message').html('<div class="alert alert-danger">Fehler getBerufe </div>');
     });
 
     // Change Handler
@@ -28,7 +33,7 @@ $(document).ready(function () {
         $.ajax({
             type: "GET",
             url: "http://sandbox.gibm.ch/klassen.php",
-            data: { format: 'json', beruf: this.value },
+            data: { format: 'json', beruf_id: this.value },
             dataType: 'json'
         }).done(function (data) {
             // leere Option einfügen
@@ -40,98 +45,67 @@ $(document).ready(function () {
             })
         }).fail(function () {
             // Fehlermeldung ausgeben - Bootstrap alert Box
-            $('#message').html('<div class="alert alert-danger">Fehler ... </div>');
+            $('#message').html('<div class="alert alert-danger">Fehler getKlassen </div>');
         });
     });
 
     // Change Handler
     $('#klasse').change(function (e) {
-        // leeren der Ausgabe
-        $('#message').empty();
-        // Ajax Request
-        $.ajax({
-            type: "GET",
-            url: "https://sandbox.gibm.ch/tafel.php",
-            data: { format: 'json', klasse_id: this.value }, // format und id mitgeben
-            dataType: 'json'
-        }).done(function (data) {
-            if (data != '') {
-
-                $('#message').append('<div class="d-flex justify-content-center"><nav aria-label="Page navigation example"><ul class="pagination"><li id="back" class="page-item"><a class="page-link" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li><li class="page-item disabled"><a class="page-link" >KW ' + weekNumber + '-' + date.getFullYear() +
-                    '</a></li><li id="next" class="page-item"><a class="page-link" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li></ul></nav></div></br><table class="table"><tr><th>Datum</th><th>Wochentag</th><th>Von</th><th>Bis</th><th>Lehrer</th><th>Fach</th><th>Raum</th></tr></table>');
-                // Loop über JSON
-                $.each(data, function (key, value) {
-                    // Tabellenzeilen anfügen   
-                    $('#message table').append(
-                        '<tr><td>' + value.tafel_datum +
-                        '</td><td>' + wochentag[value.tafel_wochentag] +
-                        '</td><td>' + value.tafel_von +
-                        '</td><td>' + value.tafel_bis +
-                        '</td><td>' + value.tafel_lehrer +
-                        '</td><td>' + value.tafel_longfach +
-                        '</td><td>' + value.tafel_raum +
-                        '</td></tr>');
-                })
-            } else {
-                // Fehlermeldung ausgeben - Bootstrap alert Box
-                $('#message').html('<div class="alert alert-warning">Wählen Sie eine andere Klasse aus </div>');
-            }
-        }).fail(function () {
-            // Fehlermeldung ausgeben - Bootstrap alert Box
-            $('#message').html('<div class="alert alert-danger">Fehler ... </div>');
-        });
+        // leeren der Ausgabe       
+        getKalenderFromDate(this.value, dateTodayWKw, date);
     });
 
-    $('li#back').click(function () {
-        console.log('test');
-        getKalenderFromDate(weekNumber - 1 + '-' + date.getFullYear());
-    });
-
-    $('li#next').click(function (e) {
-        e.preventDefault();
-        getKalenderFromDate(weekNumber + 1 + '-' + date.getFullYear());
-    });
 });
 
-function getKWFromDate(date) {
-    var currentThursday = new Date(date.getTime() + (3 - ((date.getDay() + 6) % 7)) * 86400000);
-    var yearOfThursday = currentThursday.getFullYear();
-    var firstThursday = new Date(new Date(yearOfThursday, 0, 4).getTime() + (3 - ((new Date(yearOfThursday, 0, 4).getDay() + 6) % 7)) * 86400000);
-    return weekNumber = Math.floor(1 + 0.5 + (currentThursday.getTime() - firstThursday.getTime()) / 86400000 / 7);
-};
-
-function getKalenderFromDate(kalenderwoch) {
+function getKalenderFromDate(value, wwYYYY, date) {
     $('#message').empty();
+    createTabelehead(wwYYYY);
+    // Ajax Request
     $.ajax({
         type: "GET",
         url: "https://sandbox.gibm.ch/tafel.php",
-        data: { format: 'json', klasse_id: this.value, woche: kalenderwoch }, // format und id mitgeben
+        data: { format: 'json', klasse_id: value, woche: wwYYYY },
         dataType: 'json'
     }).done(function (data) {
         if (data != '') {
-
-            $('#message').append('<div class="d-flex justify-content-center"><nav aria-label="Page navigation example"><ul class="pagination"><li id="back" class="page-item"><a class="page-link" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li><li class="page-item disabled"><a class="page-link" >KW ' + kalenderwoch +
-                '</a></li><li id="next" class="page-item"><a class="page-link" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li></ul></nav></div></br><table class="table"><tr><th>Datum</th><th>Wochentag</th><th>Von</th><th>Bis</th><th>Lehrer</th><th>Fach</th><th>Raum</th></tr></table>');
-            // Loop über JSON
+            $('#message').append('<table class="table"><tr><th>Datum</th><th>Wochentag</th><th>Von</th><th>Bis</th><th>Lehrer</th><th>Fach</th><th>Raum</th></tr></table>');
             $.each(data, function (key, value) {
-                // Tabellenzeilen anfügen   
-                $('#message table').append(
-                    '<tr><td>' + value.tafel_datum +
-                    '</td><td>' + wochentag[value.tafel_wochentag] +
-                    '</td><td>' + value.tafel_von +
-                    '</td><td>' + value.tafel_bis +
-                    '</td><td>' + value.tafel_lehrer +
-                    '</td><td>' + value.tafel_longfach +
-                    '</td><td>' + value.tafel_raum +
-                    '</td></tr>');
-            })
+                createMessageTable(value);
+            });
         } else {
             // Fehlermeldung ausgeben - Bootstrap alert Box
-            $('#message').html('<div class="alert alert-warning">Wählen Sie eine Filiale aus ...</div>');
+            $('#message').append('</br><div class="alert alert-warning">Wählen Sie eine andere Klasse aus </div>');
         }
+        document.getElementById('back').addEventListener('click', function (event) {
+            date.setDate(date.getDate() - 7)
+            getKalenderFromDate(value, getDateWWYYYY(), date);
+        });
+        document.getElementById('next').addEventListener('click', function (event) {
+            date.setDate(date.getDate() + 7)
+            getKalenderFromDate(value, getDateWWYYYY(), date);
+        });
     }).fail(function () {
         // Fehlermeldung ausgeben - Bootstrap alert Box
-        $('#message').html('<div class="alert alert-danger">Fehler ... </div>');
+        $('#message').html('<div class="alert alert-danger">Fehler GetKalender </div>');
     });
 };
+function createMessageTable(value) {
+    $('#message table').append(
+        '<tr><td>' + value.tafel_datum +
+        '</td><td>' + wochentag[value.tafel_wochentag] +
+        '</td><td>' + value.tafel_von +
+        '</td><td>' + value.tafel_bis +
+        '</td><td>' + value.tafel_lehrer +
+        '</td><td>' + value.tafel_longfach +
+        '</td><td>' + value.tafel_raum +
+        '</td></tr>');
+}
 
+function createTabelehead(wwYYYY) {
+    $('#message').append('<div class="d-flex justify-content-center"><nav aria-label="Page navigation example"><ul class="pagination"><li class="page-item"><button id="back" class="page-link" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li><li class="page-item disabled"><a class="page-link" >KW ' + wwYYYY +
+        '</button></a></li><li  class="page-item"><button id="next" class="page-link" aria-label="Next"><span aria-hidden="true">&raquo;</span></button></li></ul></nav></div></br>');
+}
+
+function getDateWWYYYY() {
+    return date.getWeekNumber() + "-" + date.getFullYear();
+}
