@@ -16,46 +16,71 @@ $(document).ready(function () {
     $.getJSON("http://sandbox.gibm.ch/berufe.php").done(function (data) {
         // loop über JSON-Array
         $.each(data, function (key, value) {
-            // Optionen anhängen
-            $('#beruf').append('<option value=' + value.beruf_id + '>' + value.beruf_name + '</option>');
+            if (localStorage.getItem('idBeruf') == value.beruf_id) {
+                $('#beruf').append('<option value=' + value.beruf_id + ' selected>' + value.beruf_name + '</option>');
+            } else {
+                if (value.beruf_name == '') {
+                    $('#beruf').append('<option value=' + value.beruf_id + '>Bitte Beruf wählen</option>')
+                } else {
+                    $('#beruf').append('<option value=' + value.beruf_id + '>' + value.beruf_name + '</option>')
+                }
+            }
         })
     }).fail(function () {
         // Fehlermeldung ausgeben - Bootstrap alert Box
         $('#message').html('<div class="alert alert-danger">Fehler getBerufe </div>');
     });
 
+    if (localStorage.getItem('idBeruf')) {
+        getKlasseById(localStorage.getItem('idBeruf'));
+    }
+
+    if (localStorage.getItem('idKlasse')) {
+        getKalenderFromDate(localStorage.getItem('idKlasse'), dateTodayWKw, date);
+    }
+
     // Change Handler
     $('#beruf').change(function (e) {
-        // leeren der Ausgabe
-        $('#message').empty();
-        $('#klasse').empty();
-        // Ajax Request
-        $.ajax({
-            type: "GET",
-            url: "http://sandbox.gibm.ch/klassen.php",
-            data: { format: 'json', beruf_id: this.value },
-            dataType: 'json'
-        }).done(function (data) {
-            // leere Option einfügen
-            $('#klasse').append('<option>Klasse auswählen ... </option>');
-            // loop über JSON-Array
-            $.each(data, function (key, value) {
-                // Optionen anhängen
-                $('#klasse').append('<option value=' + value.klasse_id + '>' + value.klasse_name + '</option>');
-            })
-        }).fail(function () {
-            // Fehlermeldung ausgeben - Bootstrap alert Box
-            $('#message').html('<div class="alert alert-danger">Fehler getKlassen </div>');
-        });
+        localStorage.setItem('idBeruf', this.value);
+        getKlasseById(this.value)
     });
 
     // Change Handler
     $('#klasse').change(function (e) {
-        // leeren der Ausgabe       
+        localStorage.setItem('idKlasse', this.value);
         getKalenderFromDate(this.value, dateTodayWKw, date);
     });
 
 });
+
+function getKlasseById(idKlasse) {
+    $('#message').empty();
+    $('#klasse').empty();
+    $.ajax({
+        type: "GET",
+        url: "http://sandbox.gibm.ch/klassen.php",
+        data: { format: 'json', beruf_id: idKlasse },
+        dataType: 'json'
+    }).done(function (data) {
+        // loop über JSON-Array
+        if (data != '') {
+            $('#klassenlabel').removeClass('d-none');
+            $('#klasse').removeClass('d-none');
+            $.each(data, function (key, value) {
+                if (localStorage.getItem('idKlasse') == value.klasse_id) {
+                    $('#klasse').append('<option value=' + value.klasse_id + ' selected>' + value.klasse_name + '</option>');
+                } else {
+                    $('#klasse').append('<option value=' + value.klasse_id + '>' + value.klasse_name + '</option>');
+                }
+            })
+        } else {
+            $('#message').html('<div class="alert alert-danger">Keine Klasse gefunden </div>');
+        }
+    }).fail(function () {
+        // Fehlermeldung ausgeben - Bootstrap alert Box
+        $('#message').html('<div class="alert alert-danger">Fehler getKlassen </div>');
+    });
+}
 
 function getKalenderFromDate(value, wwYYYY, date) {
     $('#message').empty();
@@ -68,13 +93,13 @@ function getKalenderFromDate(value, wwYYYY, date) {
         dataType: 'json'
     }).done(function (data) {
         if (data != '') {
-            $('#message').append('<table class="table"><tr><th>Datum</th><th>Wochentag</th><th>Von</th><th>Bis</th><th>Lehrer</th><th>Fach</th><th>Raum</th></tr></table>');
+            $('#message').append('<table class="table table-responsive table-hover table-dark"><tr><th>Datum</th><th>Wochentag</th><th>Von</th><th>Bis</th><th>Lehrer</th><th>Fach</th><th>Raum</th></tr></table>');
             $.each(data, function (key, value) {
                 createMessageTable(value);
             });
         } else {
             // Fehlermeldung ausgeben - Bootstrap alert Box
-            $('#message').append('</br><div class="alert alert-warning">Wählen Sie eine andere Klasse aus </div>');
+            $('#message').append('</br><div class="alert alert-warning">Keine Daten gefunden </div>');
         }
         document.getElementById('back').addEventListener('click', function (event) {
             date.setDate(date.getDate() - 7)
@@ -89,6 +114,7 @@ function getKalenderFromDate(value, wwYYYY, date) {
         $('#message').html('<div class="alert alert-danger">Fehler GetKalender </div>');
     });
 };
+
 function createMessageTable(value) {
     $('#message table').append(
         '<tr><td>' + value.tafel_datum +
